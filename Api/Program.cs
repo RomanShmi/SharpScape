@@ -22,11 +22,8 @@ if (Environment.GetEnvironmentVariable("DATABASE_CONNECTION") == "RemoteTesting"
 else
 {
     Console.WriteLine("USING SQLITE TESTING CONNECTION");
-   
-    
     builder.Services.AddDbContext<AppDbContext, SqliteDbContext>(options =>
         options.UseSqlite(builder.Configuration.GetConnectionString("LocalDevelopmentConnection")));
-
 }
 
 builder.Services.AddSingleton<IRsaKeyProvider, RsaKeyProvider>(sp => {
@@ -36,13 +33,8 @@ builder.Services.AddSingleton<IRsaKeyProvider, RsaKeyProvider>(sp => {
     return rsaKeyProvider;
 });
 
-
-
-
-
 builder.Services.AddControllers().AddJsonOptions(x =>
                 x.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles);
-
 
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
@@ -70,9 +62,6 @@ builder.Services.AddSwaggerGen(options => {
 });
 
 
-
-
-//builder.Services.AddControllersWithViews();
 builder.Services.AddRazorPages();
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)

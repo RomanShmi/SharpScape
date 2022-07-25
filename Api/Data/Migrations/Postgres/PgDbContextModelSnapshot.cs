@@ -144,6 +144,29 @@ namespace SharpScape.Api.Data.Migrations.Postgres
                     b.ToTable("GameAvatars");
                 });
 
+            modelBuilder.Entity("SharpScape.Api.Models.ThreadLike", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("ThreadId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ThreadId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("ThreadLikes");
+                });
+
             modelBuilder.Entity("SharpScape.Api.Models.User", b =>
                 {
                     b.Property<int>("Id")
@@ -151,6 +174,9 @@ namespace SharpScape.Api.Data.Migrations.Postgres
                         .HasColumnType("integer");
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime?>("Banned")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<DateTime>("Created")
                         .HasColumnType("timestamp with time zone");
@@ -163,9 +189,13 @@ namespace SharpScape.Api.Data.Migrations.Postgres
                         .IsRequired()
                         .HasColumnType("bytea");
 
-                    b.Property<byte[]>("PasswordSalt")
+                    b.Property<byte[]>("PasswordHmacKey")
                         .IsRequired()
                         .HasColumnType("bytea");
+
+                    b.Property<string>("PasswordSalt")
+                        .IsRequired()
+                        .HasColumnType("text");
 
                     b.Property<string>("ProfilePicDataUrl")
                         .IsRequired()
@@ -235,6 +265,25 @@ namespace SharpScape.Api.Data.Migrations.Postgres
                         .HasForeignKey("SharpScape.Api.Models.GameAvatar", "UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("SharpScape.Api.Models.ThreadLike", b =>
+                {
+                    b.HasOne("SharpScape.Api.Models.ForumThread", "ForumThread")
+                        .WithMany()
+                        .HasForeignKey("ThreadId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("SharpScape.Api.Models.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("ForumThread");
 
                     b.Navigation("User");
                 });

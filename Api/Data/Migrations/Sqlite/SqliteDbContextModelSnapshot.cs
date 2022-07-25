@@ -7,7 +7,7 @@ using SharpScape.Api.Data;
 
 #nullable disable
 
-namespace SharpScape.Api.Migrations
+namespace SharpScape.Api.Data.Migrations.Sqlite
 {
     [DbContext(typeof(SqliteDbContext))]
     partial class SqliteDbContextModelSnapshot : ModelSnapshot
@@ -131,11 +131,35 @@ namespace SharpScape.Api.Migrations
                     b.ToTable("GameAvatars");
                 });
 
+            modelBuilder.Entity("SharpScape.Api.Models.ThreadLike", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("ThreadId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ThreadId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("ThreadLikes");
+                });
+
             modelBuilder.Entity("SharpScape.Api.Models.User", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
+
+                    b.Property<DateTime?>("Banned")
+                        .HasColumnType("TEXT");
 
                     b.Property<DateTime>("Created")
                         .HasColumnType("TEXT");
@@ -148,9 +172,13 @@ namespace SharpScape.Api.Migrations
                         .IsRequired()
                         .HasColumnType("BLOB");
 
-                    b.Property<byte[]>("PasswordSalt")
+                    b.Property<byte[]>("PasswordHmacKey")
                         .IsRequired()
                         .HasColumnType("BLOB");
+
+                    b.Property<string>("PasswordSalt")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("ProfilePicDataUrl")
                         .IsRequired()
@@ -220,6 +248,25 @@ namespace SharpScape.Api.Migrations
                         .HasForeignKey("SharpScape.Api.Models.GameAvatar", "UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("SharpScape.Api.Models.ThreadLike", b =>
+                {
+                    b.HasOne("SharpScape.Api.Models.ForumThread", "ForumThread")
+                        .WithMany()
+                        .HasForeignKey("ThreadId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("SharpScape.Api.Models.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("ForumThread");
 
                     b.Navigation("User");
                 });

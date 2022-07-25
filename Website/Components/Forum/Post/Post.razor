@@ -20,7 +20,9 @@
         <div class="comment-footer">
             <span class="date">@Date</span>
             <span class="action-icons active">
-                <a data-abc="true" onclick="@OpenEditPost"><i class="oi oi-pencil"></i></a>
+                @if(Convert.ToInt32(loggedId)== Convert.ToInt32(AuthorId)){
+                    <a data-abc="true" onclick="@OpenEditPost"><i class="oi oi-pencil"></i></a>
+                }
             </span>
             @if (CreateThread)
             {
@@ -81,7 +83,7 @@
     private async void HandleValidEditSubmit()
     {
         CreateThread = false;
-        var result = await Http.PostAsJsonAsync($"/api/ForumPosts/{PostId}", tPost);
+        var result = await Http.PostAsJsonAsync($"api/ForumPosts/{PostId}", tPost);
         if (result.IsSuccessStatusCode)
         {
             post = await result.Content.ReadAsAsync<ForumPostEditDto>();
@@ -93,7 +95,7 @@
     private async void HandleValidDeleteSubmit()
     {
         CreateThread = false;
-        var result = await Http.DeleteAsync($"/api/ForumPosts/{PostId}");
+        var result = await Http.DeleteAsync($"api/ForumPosts/{PostId}");
         RefreshMethod.Invoke();
     }
     /// methods for popup modal

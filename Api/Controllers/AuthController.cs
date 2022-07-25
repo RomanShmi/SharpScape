@@ -5,6 +5,7 @@ using SharpScape.Api.Data;
 using SharpScape.Shared.Dto;
 using SharpScape.Api.Services;
 using System.Security.Claims;
+using Microsoft.EntityFrameworkCore;
 
 namespace SharpScape.Api.Controllers;
 
@@ -25,20 +26,23 @@ public class AuthController : ControllerBase
 
     [AllowAnonymous]
     [HttpPost("Register")]
-    public ActionResult<string> Register([FromBody] UserRegisterDto request)
+    public async Task<ActionResult<string>> Register([FromBody] UserRegisterDto request)
     {
-        if (_context.Users.Any(u => u.Email.ToLower() == request.Email.ToLower()))
+        if (await _context.Users.AnyAsync(u => u.Email.ToLower() == request.Email.ToLower()))
             return BadRequest($"User with email {request.Email} already exists");
-        if (_context.Users.Any(u => u.Username.ToLower() == request.Username.ToLower()))
+        if (await _context.Users.AnyAsync(u => u.Username.ToLower() == request.Username.ToLower()))
             return BadRequest($"Username {request.Username} already exists");
 
         var user = new User(request.Username, request.Email, request.Password);
-        _context.Add(user);
-        _context.SaveChanges();
+        var avatar = new GameAvatar() { SpriteName = request.Avatar, User = user, UserId = user.Id };
+        user.GameAvatar = avatar;
+
+        await _context.Users.AddAsync(user);
+        await _context.GameAvatars.AddAsync(avatar);
+        await _context.SaveChangesAsync();
 
         return Ok(_crypto.CreateToken(user));
     }
-
     [Authorize(Roles="Admin")]
     [HttpPost("RegisterAdmin")]
     public ActionResult<string> RegisterAdmin([FromBody] UserRegisterDto request)
@@ -57,14 +61,27 @@ public class AuthController : ControllerBase
 
     [AllowAnonymous]
     [HttpPost("Login")]
-    public ActionResult<string> Login([FromBody] UserLoginDto request)
+    public async Task<ActionResult<string>> Login([FromBody] UserLoginDto request)
     {
-        var user = _context.Users.FirstOrDefault(u => u.Username.ToLower() == request.Username.ToLower());
-        UserLoginResponseDto response = new UserLoginResponseDto();
+        var user = await _context.Users.FirstOrDefaultAsync(u => u.Username.ToLower() == request.Username.ToLower());
+
         if (user is null)
             return BadRequest("Username/Email or Password incorrect");
+
+        if (user.Banned.HasValue)
+        {
+            if (user.IsBanned())
+            {
+                return StatusCode(401, "Oh no! you are banned till " + user.Banned);
+            }
+            else
+            {
+                user.Banned = null;
+                await _context.SaveChangesAsync();
+            }
+        }
         
-        if (! _crypto.VerifyPasswordHash(request.Password, user.PasswordHash, user.PasswordSalt))
+        if (! _crypto.VerifyPasswordHash(request.Password, user.PasswordSalt, user.PasswordHash, user.PasswordHmacKey))
             return BadRequest("Username/Email or Password incorrect");
 
         //Create the Acess Token and Refresh Token
@@ -73,6 +90,8 @@ public class AuthController : ControllerBase
             new Claim(ClaimTypes.Name, user.Username),
             new Claim(ClaimTypes.Role, "Manager")
         };
+
+        UserLoginResponseDto response = new UserLoginResponseDto();
 
         response.accessToken = _crypto.CreateToken(user);
         response.refreshToken = _crypto.CreateRefreshToken(user);
@@ -84,7 +103,7 @@ public class AuthController : ControllerBase
 
         _context.Users.Update(user);
 
-        _context.SaveChanges();
+        await _context.SaveChangesAsync();
         return Ok(response);
     }
 }
